@@ -1,7 +1,8 @@
 import NextAuth from 'next-auth'
-import Credentials from 'next-auth/providers/credentials';
+import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google'
 import { randomBytes, randomUUID } from "crypto";
+import { genSalt, hash, compare } from 'bcrypt';
 
 const PROVIDERS = {
     CREDENTIALS: 'credentials',
@@ -13,27 +14,34 @@ export default NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
 
   providers: [
-    Credentials({
-      name: 'username',
+    CredentialsProvider({
+
+      name: 'credentials',
+      id: 'credentials',
+      type: 'credentials',
 
       credentials: {
-        username: { label: 'Username', type: 'text', placeholder: 'Username' },
+        email: { label: 'Email', type: 'email', placeholder: 'Email' },
         password: { label: 'Password', type: 'password', placeholder: 'Password' }
       },
 
-      async authorize(credentials, req) {
+      async authorize(credentials) {
 
-        console.log({credentals: credentials})
-
-        const username = credentials.username;
         const password = credentials.password;
+        const email = credentials.email;
 
-        if(!username || !password)
+        if(!password || !email)
           return null;
 
+        const user = await getUserByEmail(email)
 
-        
-        return credentials
+        if(!user || !user.password) return null
+
+        const passwordMatch = await compare(password, user.password)
+
+        if(!passwordMatch) return null
+
+        return user
       }
     }),
     GoogleProvider({
@@ -56,16 +64,18 @@ export default NextAuth({
   },
 
   callbacks: {
-    async signIn({ account, profile} ) {
+    async signIn({ account, profile } ) {
 
       // Check that email has been verified
-      if(account.provider === PROVIDERS.GOOGLE) {
+      if(account.provider === PROVIDERS.CREDENTIALS) {
+        return true
+      }
+
+      else if(account.provider === PROVIDERS.GOOGLE) {
 
           if(!profile.email_verified || !profile.email.endsWith('@gmail.com')) return false;
           
       }
-
-      console.log({profile: profile})
 
       // Verify that user account already exists
       const userExists = await checkUserExistsByEmail(profile.email)
@@ -81,16 +91,19 @@ export default NextAuth({
       }
 
       // Create account if does not exist
-      const accountCreationSuccessful = createUserAccount(userAccount)
+      const accountCreationResponse = await createUserAccount(userAccount)
+
+      const accountcreationAccount = accountCreationResponse.user
+      const accountCreationSuccess = accountCreationResponse.success
 
       // Make sure account was created successfully
-      if(!accountCreationSuccessful) {
+      if(!accountCreationSuccess) {
         console.error("ERROR: Could not create account")
         return false
       }
 
       // Verify that user account already exists
-      const userExistsPartTwo = await checkUserExistsByEmail(profile.email)
+      const userExistsPartTwo = await checkUserExistsByEmail(accountcreationAccount.email)
 
       // Login user if account exists
       if(userExistsPartTwo) return true
@@ -142,8 +155,6 @@ async function checkUserExistsByUsername(username) {
     },
     body: JSON.stringify({username})
   }
-
-  console.log(request)
   
   try {
     const resp = await fetch(`${process.env.NEXTAUTH_URL}/api/users/checkUserExists`, request)
@@ -164,6 +175,14 @@ async function checkUserExistsByEmail(email) {
 
   // TODO - ADD REDIS CACHING FOR ACCOUNT BEFORE REQUEST
 
+  const user = await getUserByEmail(email)
+
+  return user !== null
+
+  
+}
+
+async function getUserByEmail(email) {
   const request = {
     method: 'POST',
     headers: {
@@ -173,14 +192,14 @@ async function checkUserExistsByEmail(email) {
     body: JSON.stringify({email})
   }
 
-  console.log(request)
-
   try {
     const resp = await fetch(`${process.env.NEXTAUTH_URL}/api/users/checkUserExists`, request)
 
     const jsonResponse = await resp.json()
 
-    return jsonResponse.user !== null
+    console.log(jsonResponse)
+
+    return jsonResponse.user
 
   } catch (err) {
     console.error("ERROR: in fetch for checkUserExists")
@@ -206,7 +225,7 @@ async function createUserAccount(userAccount) {
 
       const jsonResponse = await resp.json()
 
-      return jsonResponse.success
+      return jsonResponse
 
   } catch (err) {
     console.error("ERROR: In fetch from createNewUser")

@@ -24,8 +24,6 @@ export default async function checkUserExists(request, response) {
       googleId: account.googleId
     }
   })
-
-  console.log(prismaUser)
  
   response.status(200).json({ user: prismaUser, success: true });
   
