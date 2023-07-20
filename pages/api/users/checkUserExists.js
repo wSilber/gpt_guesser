@@ -8,19 +8,29 @@ export default async function checkUserExists(request, response) {
         return
     }
 
-    const email = request.body.email
+    const { body } = request
+    const email = body.email
+    const username = body.username
 
-    if(!email) {
-        console.error(`ERROR: No email provided`)
-        response.status(400).json({error: 'User not provided'})
+    let user = null;
+
+    if(email) {
+      user = await prisma.user.findFirst({
+        where: {
+          email: email
+        }
+      })
+    } else if(username) {
+      user = await prisma.user.findFirst({
+        where: {
+          username: username
+        }
+      })
+    } else {
+      console.error(`ERROR: No information provided`)
+      response.status(400).json({error: 'No user info provided'})
     }
 
-  const user = await prisma.user.findFirst({
-    where: {
-      email: email
-    }
-  })
- 
   response.status(200).json({ user: user });
   
 }

@@ -7,7 +7,6 @@ export default async function checkUserExists(request, response) {
         response.status(405).json({error: 'This endpoint only accepts PUT requests'})
         return
     }
-
     const account = request.body.userAccount
 
     if(!account) {
@@ -28,6 +27,6 @@ export default async function checkUserExists(request, response) {
 
   console.log(prismaUser)
  
-  response.status(200).json({ user: prismaUserser });
+  response.status(200).json({ user: prismaUser, success: true });
   
 }

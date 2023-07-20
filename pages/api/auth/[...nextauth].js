@@ -1,8 +1,10 @@
 import NextAuth from 'next-auth'
+import Credentials from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google'
 import { randomBytes, randomUUID } from "crypto";
 
 const PROVIDERS = {
+    CREDENTIALS: 'credentials',
     GOOGLE: 'google',
 }
 
@@ -11,6 +13,29 @@ export default NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
 
   providers: [
+    Credentials({
+      name: 'username',
+
+      credentials: {
+        username: { label: 'Username', type: 'text', placeholder: 'Username' },
+        password: { label: 'Password', type: 'password', placeholder: 'Password' }
+      },
+
+      async authorize(credentials, req) {
+
+        console.log({credentals: credentials})
+
+        const username = credentials.username;
+        const password = credentials.password;
+
+        if(!username || !password)
+          return null;
+
+
+        
+        return credentials
+      }
+    }),
     GoogleProvider({
       clientId: process.env.GOOGLE_ID,
       clientSecret: process.env.GOOGLE_SECRET,
@@ -40,8 +65,10 @@ export default NextAuth({
           
       }
 
+      console.log({profile: profile})
+
       // Verify that user account already exists
-      const userExists = await checkUserExists(profile.email)
+      const userExists = await checkUserExistsByEmail(profile.email)
 
       // Login user if account exists
       if(userExists) return true
@@ -63,7 +90,7 @@ export default NextAuth({
       }
 
       // Verify that user account already exists
-      const userExistsPartTwo = await checkUserExists(profile.email)
+      const userExistsPartTwo = await checkUserExistsByEmail(profile.email)
 
       // Login user if account exists
       if(userExistsPartTwo) return true
@@ -105,17 +132,48 @@ export default NextAuth({
   }
 })
 
-async function checkUserExists(email) {
+async function checkUserExistsByUsername(username) {
+
+  const request = {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({username})
+  }
+
+  console.log(request)
+  
+  try {
+    const resp = await fetch(`${process.env.NEXTAUTH_URL}/api/users/checkUserExists`, request)
+
+    const jsonResponse = await resp.json()
+
+    return jsonResponse.user !== null
+    
+  } catch(err) {
+    console.error("ERROR: in fetch for checkUserExistsByUsername")
+    console.error(err)
+    return false
+  }
+
+}
+
+async function checkUserExistsByEmail(email) {
 
   // TODO - ADD REDIS CACHING FOR ACCOUNT BEFORE REQUEST
 
   const request = {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
     },
-    body: JSON.stringify({email: email})
+    body: JSON.stringify({email})
   }
+
+  console.log(request)
 
   try {
     const resp = await fetch(`${process.env.NEXTAUTH_URL}/api/users/checkUserExists`, request)
@@ -136,9 +194,10 @@ async function createUserAccount(userAccount) {
   const request = {
     method: 'PUT',
     headers: {
-      'Content-Type': 'application/json'
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
     },
-    body: JSON.stringify({userAccount: userAccount})
+    body: JSON.stringify({'userAccount': userAccount})
   }
 
   try {
