@@ -3,7 +3,13 @@ import { openai } from "@/openai/gpt";
 
 export default async function checkContent(req, res) {
 
-    const message = req.query.message;
+    if(request.method !== 'POST') {
+        console.error(`ERROR: ${request.method} attempted on endpoint api/openai/checkContent`)
+        response.status(405).json({error: 'This endpoint only accepts POST requests'})
+        return
+    }
+
+    const message = req.body.message;
 
     console.log(message)
 

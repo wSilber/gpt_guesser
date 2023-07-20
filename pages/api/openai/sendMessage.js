@@ -1,7 +1,8 @@
 
 import { openai, model, Roles, createMessage } from "@/openai/gpt";
 
-export default async function test(req, res) {
+export default async function sendMessage(req, res) {
+    
     const completion = await openai.createChatCompletion({
     model: model,
     messages: [
