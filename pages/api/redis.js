@@ -41,3 +41,7 @@ export async function createChatRoom(data) {
     await client.disconnect();
     return id;
 }
+
+export default function test(req, res) {
+    res.send({test: "test"})
+}

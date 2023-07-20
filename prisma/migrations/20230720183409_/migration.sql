@@ -2,6 +2,7 @@
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
     "username" TEXT,
+    "password" TEXT,
     "email" TEXT,
     "googleId" TEXT,
     "image" TEXT,
