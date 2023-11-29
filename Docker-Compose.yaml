@@ -12,11 +12,20 @@ services:
       - database
     volumes:
      - ./WebServer/pages:/app/pages
+    networks:
+      - test_net
   database:
+    container_name: redis
     image: redis
+    restart: always
     ports:
      - "6379:6379"
+    command: redis-server --save 20 1 --loglevel warning
     volumes:
      - redis_data:/data
+    networks:
+      - test_net
 volumes:
   redis_data:
+networks:
+  test_net:
