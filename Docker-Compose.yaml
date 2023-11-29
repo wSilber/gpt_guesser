@@ -1,15 +1,22 @@
 services:
   webserver:
-    build: "WebServer"
+    container_name: gpt_webserver
+    build:
+     context: ./WebServer
+     dockerfile: Dockerfile
+    environment:
+      - WATCHPACK_POLLING=true
     ports:
      - "3000:3000"
     depends_on:
       - database
+    volumes:
+     - ./WebServer/pages:/app/pages
   database:
     image: redis
     ports:
      - "6379:6379"
     volumes:
-     - redis_data:/Database/db_data
+     - redis_data:/data
 volumes:
   redis_data:
