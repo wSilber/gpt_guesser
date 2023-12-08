@@ -47,6 +47,27 @@ export default NextAuth({
     GoogleProvider({
       clientId: process.env.GOOGLE_ID,
       clientSecret: process.env.GOOGLE_SECRET,
+
+      callbacks: {
+
+        async signIn({ user, account, profile, email, credentials }) {
+
+          console.log("SIGNIN")
+
+          console.log({
+            user: user,
+            account: account,
+            profile: profile,
+            email: email,
+            credentials: credentials
+          })
+
+          return true;
+
+
+        }
+
+      }
     }),
   ],
 
@@ -73,12 +94,19 @@ export default NextAuth({
 
       else if(account.provider === PROVIDERS.GOOGLE) {
 
+          console.log({
+            verified: profile.email_verified,
+            ends: profile.email.endsWith("@gmail.com")
+          })
+
           if(!profile.email_verified || !profile.email.endsWith('@gmail.com')) return false;
           
       }
 
       // Verify that user account already exists
       const userExists = await checkUserExistsByEmail(profile.email)
+
+      console.log({userExists: userExists})
 
       // Login user if account exists
       if(userExists) return true
@@ -155,11 +183,15 @@ async function checkUserExistsByUsername(username) {
     },
     body: JSON.stringify({username})
   }
+
+  console.log("HERERERERERE")
+  console.log(request)
   
   try {
     const resp = await fetch(`${process.env.NEXTAUTH_URL}/api/users/checkUserExists`, request)
 
     const jsonResponse = await resp.json()
+    console.log(jsonResponse)
 
     return jsonResponse.user !== null
     
@@ -197,6 +229,7 @@ async function getUserByEmail(email) {
 
     const jsonResponse = await resp.json()
 
+    console.log("EMaIL RESPONSE")
     console.log(jsonResponse)
 
     return jsonResponse.user
@@ -218,6 +251,8 @@ async function createUserAccount(userAccount) {
     },
     body: JSON.stringify({'userAccount': userAccount})
   }
+
+  console.log(request)
 
   try {
 

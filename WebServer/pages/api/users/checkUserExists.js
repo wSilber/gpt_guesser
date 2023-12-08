@@ -1,4 +1,8 @@
-import { prisma } from "@/prisma/prisma";
+// import { createClient } from 'redis'
+
+// const client = createClient();
+
+// client.on('error', err => console.log("Redis client error", err));
  
 export default async function checkUserExists(request, response) {
 
@@ -14,23 +18,29 @@ export default async function checkUserExists(request, response) {
 
     let user = null;
 
+    // Check for user by email
     if(email) {
-      user = await prisma.user.findFirst({
-        where: {
-          email: email
-        }
-      })
-    } else if(username) {
-      user = await prisma.user.findFirst({
-        where: {
-          username: username
-        }
-      })
-    } else {
-      console.error(`ERROR: No information provided`)
-      response.status(400).json({error: 'No user info provided'})
+
+      // const db_response = await client.get(`users/`)
+      
+      // response.status(200).json({ user: user });
+
+
+
     }
 
-  response.status(200).json({ user: user });
+    response.status(400).json({error: 'No user info provided'})
+    return;
+
+    // } else if(username) {
+    //   user = await prisma.user.findFirst({
+    //     where: {
+    //       username: username
+    //     }
+    //   })
+    // } else {
+    //   console.error(`ERROR: No information provided`)
+    //   response.status(400).json({error: 'No user info provided'})
+    // }
   
 }
